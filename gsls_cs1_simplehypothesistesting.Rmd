@@ -1,0 +1,152 @@
+---
+title: "gsls_cs1_simplehypothesistesting"
+author: Liana Hardy
+date: 2020-05-04
+output: html_notebook
+---
+
+GSLS Biostatistics Initiative
+CS1 - Simple Hypothesis Testing Matt Castle (mdc31@cam.ac.uk)
+
+# see cs1_info for background on stats 
+................................................................................................................
+The One-sample test
+
+For example, suppose we measure the body lengths of male guppies (in mm) collected from the Guanapo River in Trinidad. We want to test whether the data support the hypothesis that the mean body is actually 20mm. We form the following null and alternative hypotheses:
+
+H0: The mean body length is equal to 20mm (μ=20).
+H1: The mean body length is not equal to 20mm (μ≠20).
+
+We will use a one-sample, two-tailed t-test to see if we should reject the null hypothesis or not.
+- We use a one-sample test because we only have one sample.
+- We use a two-tailed t-test because we want to know if our data suggest that the true (population) mean is different - from 20mm in either direction rather than just to see if it is greater than or less than 20mm (in which case we  would use a one-tailed test).
+
+
+The data are stored in the file “CS1-onesample.csv”
+
+## Read this into R using the file.choose() command:
+```{r}
+fishlengthDF<- read.csv(file.choose(),header=T)
+fishlength<-fishlengthDF$Guanapo
+
+# file.choose() is a nice way of generating filepaths in R. Its upside is that it allows use of the familiar windows explorer window to select your file. Its downside is that it can’t be used in automated scripts.
+```
+
+The first line reads the data into R and creates an object called a dataframe. This dataframe only contains a single column of numbers called “Guanapo” (the name of the River). In most situations, and for most statistical analyses, having our data stored in a dataframe is exactly what we’d want. However, for one sample tests we actually need our data to be stored as a vector. So, the second line extracts the values that are in the Guanapo column of our fishlengthDF dataframe and creates a simple vector of numbers that we have called fishlength. This step is only necessary for one-sample tests and when we look at more complex datasets, we won’t need to do this second step at all.
+
+## Summarise and visualise the data
+```{r}
+summary(fishlength)
+boxplot(fishlength, main="Male Guppies", ylab="Length (mm)")
+```
+
+The data do not appear to contain any obvious errors, and whilst both the mean and median are less than 20 (18.3 and 18.8 respectively) it is not absolutely certain that the sample mean is sufficiently different from this value to be “statistically significant”, although we may anticipate such a result.
+
+## Perform a one-sample, two-tailed t-test
+```{r}
+t.test(fishlength, mu=20, alternative="two.sided")
+
+# first argument must be a numerical vector of data values - fishlength
+# second argument must be a number and is the mean to be tested under the null hypothesis - mu=20
+# third argument gives the type of alternative hypothesis and must be one of "two.sided","greater" or "less"
+```
+## Interpreting the data
+
+1st line - name of the test
+2nd line - dataset name
+3rd line contain 3 key output values
+- t-value is -3.5492 (we'll need this for reporting)
+- there are 28 degrees of freedom (reporting)
+- the p-value is 0.001387
+4th line - simply states the alternative hypothesis
+5th and 6th lines give the 95th confidence interval
+7th, 8th and 9th line give the sample mean again (18.29655)
+
+A one-sample t-test indicated that the mean body length of male guppies (μ=18.29mm) differs significantly from 20mm (t=-3.55, df=28, p=0.0014).
+
+The above sentence is an adequate concluding statement for this test and is what we would write in any paper or report. Note that we have included (in brackets) information on the actual mean value of our group(μ=18.29mm), the test statistic (t=-3.55), the degrees of freedom (df=28), and the p-value (p=0.0014). In some journals you are only required to report whether the p-value is less than the critical value (e.g. p<0.05) but I would always recommend reporting the actual p-value obtained.
+
+## Checking for normality 
+ In increasing order of rigor:
+ - histogram
+ - Quantile-quantile plot (qq)
+ - Shapiro-Wilk test
+ 
+## Plot a histogran of the data
+ 
+```{r}
+hist(fishlength, breaks = 15)
+```
+The distribution appears to be unimodal and symmetric, and so it isn’t obviously non-normal. However, there are a lot of distributions that have these simple properties but which aren’t normal, so this isn’t exactly rigorous. Thankfully there are other, more rigorous tests.
+
+Q-Q plot is the short for quantile-quantile plot. This diagnostic plot (as it is sometimes called) is a way of comparing two distributions. 
+
+## Construct a Q-Q Plot of the quantiles of the data against the quantiles of a normal distribution.
+```{r}
+qqnorm(fishlength) # draws qq plot
+qqline(fishlength) # draws line
+
+```
+What is important to know is that if the data were normally distributed then all of the points should lie on (or close to) the diagonal line in this graph. 
+
+In this case, the points lie quite close to the line for the most part but the sample quantiles (points) from either end of the sample distribution are either smaller (below the line on the left) or larger (above the line on the right) than expected if they were supposed to be normally distributed. This suggests that the sample distribution is a bit more spread out than would be expected if it came from a normal distribution.
+
+It is important to recognise that there isn’t a simple unambiguous answer when interpreting these types of graph, in terms of whether the assumption of normality has been well met or not and instead it often boils down to a matter of experience.
+It is a very rare situation indeed where the assumptions necessary for a test will be met unequivocally and a certain degree of personal interpretation is always needed. Here you have to ask yourself whether the data are normal “enough” for you to be confident in the validity of the test.
+
+* see pdf from course for examples of what normality looks like.
+
+## Perform a Shapiro-Wilk Test
+```{r}
+shapiro.test(fishlength)
+```
+
+The 1st line gives the name of the test and the 2nd line reminds you what the dataset was called
+The 3rd line contains the two key outputs from the test:
+  - The calculated w-value is 0.9494 (we don’t need to know this)
+  - The p-value is 0.1764
+
+As the p-value is bigger than 0.05 (say) then we can say that there is insufficient evidence to reject the null hypothesis that the sample came from a normal distribution.
+
+
+..................................................................................................................
+## The one-sample Wilcoxon signed-rank test
+
+The one-sample Wilcoxon signed rank test allows to see if the median body length is different from a specified value. Here we want to test whether the data support the hypothesis that the median body is actually 20mm. The following null and alternative hypotheses are very similar to those used for the one sample t-test:
+
+H0: The median body length is equal to 20mm (μ=20).
+H1: The median body length is not equal to 20mm (μ≠20).
+
+We will use a one-sample, two-tailed Wilcoxon signed-rank test to see if we should reject the null hypothesis or not.
+
+```{r}
+summary(fishlength)
+boxplot(fishlength, main="Male Guppies", ylab="Length (mm)")
+```
+## Perform a one-sample, two-tailed Wilcoxon signed-rank test
+```{r}
+wilcox.test(fishlength, mu=20, alternative = "two.sided")
+```
+1st line: give a warning (not an error) message regarding the implementation of this test. This can be safely ignored in this case as the p-value is so small, but essentially, it’s letting you know that some of the data values are identical to each other.
+2nd line: name of test 
+3rd line: dataset
+The 4th line contains the two key outputs from the test:
+  - The calculated statistic is 67.5 (we’ll need this for reporting)
+  - The p-value is 0.001222.
+The 5th line simply states the alternative hypothesis.
+
+So, in this case since our p-value is less than 0.05 we can reject our null hypothesis and state that:
+
+A one-sample Wilcoxon signed-rank test indicated that the median body length of male guppies (μ=18.8mm) differs significantly from 20mm (V=67.5, n=29, p=0.0012).
+
+Whilst there are formal statistical tests for symmetry we will opt for a simple visual inspection using both a boxplot and a histogram
+
+## Plot a histogram and boxplo of the data
+```{r}
+hist(fishlength, breaks=10)
+
+boxplot(fishlength)
+```
+Here we can see that whilst the distribution isn’t perfectly symmetric, neither is it heavily skewed to the left or right and we can make the call that the distribution is “symmetric enough” for us to be happy with the results of the test.
+
+

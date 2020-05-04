@@ -1,0 +1,102 @@
+---
+title: "gsls_exercises"
+author: Liana Hardy
+date: 2020-05-02
+output: html_notebook
+---
+
+3.3.7 Exercise on One-Sample t-test
+
+The following data are the dissolving times (in seconds) of a drug in agitated gastric juice:
+42.7, 43.4, 44.6, 45.1, 45.6, 45.9, 46.8, 47.6
+
+Do these results provide any evidence to suggest that dissolving time for this drug is different from 45s?
+
+1. Write down the null and alternative hypotheses.
+
+H0: The mean dissolving time is equal to 45s ((μ=45)
+H1: The mean body length is not equal to 45s (μ≠45).
+
+2. Summarise and visualise the data and perform an appropriate one-sample t-test.
+
+3. What can you say about the dissolving time? (what sentence would you use to report this)
+
+A one-sample t-test indicated that the mean dissolving time of drug in an agitated stomach (μ=45.2125) is not significantly different from 45 (t=0.36647, df=7, p=0.7248).
+
+4. Check the assumptions for the test.
+- histogram
+- qq plot
+
+Graphs suggest normal distribution
+
+5. Was the test valid?
+
+- shapiro-wilks
+As the p-value is bigger than 0.05 - there is insufficient evidence to reject the null hypothesis that the sample came from a normal distribution.
+
+## Create a vector and name it dissolving_time
+```{r}
+dissolving_time <- c(42.7, 43.4, 44.6, 45.1, 45.6, 45.9, 46.8, 47.6) # units = seconds
+dissolving_time
+```
+
+## Create a dataframe
+```{r}
+dissolving_timeDF <- data.frame(dissolving_time)
+str(dissolving_timeDF)
+```
+
+## Summarise and visualise the data
+```{r}
+summary(dissolving_timeDF)
+boxplot(dissolving_timeDF, main="Drug", ylab="Dissolving Time (s)")
+
+```
+## Perform a one-sample, two-tailed t-test
+```{r}
+t.test(dissolving_timeDF, mu=45, alternative="two.sided")
+
+# first argument must be a numerical vector of data values 
+# second argument must be a number and is the mean to be tested under the null hypothesis 
+# third argument gives the type of alternative hypothesis and must be one of "two.sided","greater" or "less"
+```
+
+## Create a histogram to check normality 
+```{r}
+hist(dissolving_time, breaks = 5)
+```
+## Create a QQ plot to check normality
+```{r}
+qqnorm(dissolving_time)
+qqline(dissolving_time)
+```
+
+## Perform a Shapiro-Wilk Test
+```{r}
+shapiro.test(dissolving_time)
+```
+3.4.6 Exercise on One-Sample Wilcoxon signed-rank test
+
+## Analyse the drug dataset from before using a one-sample Wilcoxon signed-rank test?
+```{r}
+wilcox.test(dissolving_time, mu=45, alternative = "two.sided")
+```
+
+## Plot a histogram and boxplot from the data
+
+```{r}
+hist(dissolving_time, breaks = 5)
+boxplot(dissolving_time)
+```
+
+
+A one-sample Wilcoxon signed-rank test indicated that the median dissolving time of a drug in an agitated stomach (μ=45.35s) does not differ significantly from 45s (V=22, n=8, p=0.6406). 
+
+Discuss with a neighbour which of the two tests you feel is best suited to the data.
+
+QQ plot not very conclusive, some snaking - Shamiro-wilks test has insignificant p-value (p = 0.9641) so agree that assumptions of test is met (normal distribution). Prefer this to wilcoxon signed-rank test as t-test holds more power and assumption of symmetry in boxplots/qq plot was not convincing. 
+
+Does it matter in this case?
+
+Not really both show high p-value/ not significant 
+
