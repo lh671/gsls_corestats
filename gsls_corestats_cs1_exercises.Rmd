@@ -2,7 +2,7 @@
 title: "GSLS - CS1 Exercises"
 author: "Liana Hardy"
 date: '2020-05-02'
-output: html_notebook
+output: pdf_document
 ---
 
 ## 3.3.7 Exercise on One-Sample t-test
@@ -160,6 +160,7 @@ ANSWER: not significant
 
 ## Normality - shapiro
 ```{r}
+cortisol
 shapiro.test(cortisol$morning)
 shapiro.test(cortisol$evening)
 ```

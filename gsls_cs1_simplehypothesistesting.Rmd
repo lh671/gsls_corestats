@@ -94,7 +94,7 @@ The data are stored in the file “CS1-onesample.csv”
 
 ## Read this into R using the file.choose() command:
 ```{r}
-fishlengthDF<- read.csv(file.choose(),header=T)
+fishlengthDF<- read.csv(file = 'CS1-onesample.csv', header=T)
 fishlength<-fishlengthDF$Guanapo
 
 # file.choose() is a nice way of generating filepaths in R. Its upside is that it allows use of the familiar windows explorer window to select your file. Its downside is that it can’t be used in automated scripts.
@@ -283,7 +283,7 @@ We use a two-sample, two-tailed t-test to see if we can reject the null hypothes
 
 ## Read CS1-twosample.csv into R
 ```{r}
-rivers<-read.csv(file.choose(), header=T)
+rivers<-read.csv(file='CS1-twosample.csv', header=T)
 aggregate(length~river, data=rivers, summary) #Splits the data into subsets, computes summary statistics for each, and returns the result in a convenient form.
 ```
 
@@ -427,7 +427,7 @@ We use a two-sample, two-tailed paired t-test to see if we can reject the null h
 • We’re using a t-test because we’re assuming that the parent populations are normal and have equal variance (We’ll check this in a bit).
 
 ```{r}
-cortisol <- read.csv(file.choose(),header=T)
+cortisol <- read.csv(file='CS1-twopaired.csv',header=T)
 
 ```
 
