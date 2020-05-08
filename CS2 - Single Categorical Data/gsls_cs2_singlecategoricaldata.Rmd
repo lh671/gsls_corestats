@@ -1,0 +1,447 @@
+---
+title: "GSLS - CS2 Single Categorical Data"
+author: Liana Hardy
+date: 2020-05-08
+output: html_notebook
+---
+
+#### Aim:
+To introduce R commands for analysing single categorical predictors
+
+#### Goals:
+By the end of this practical participants should be able to perform the following statistical analyses:   
+1. One-way Analysis of Variance (ANOVA)  
+2. Kruskal-Wallis test  
+
+For each of these, participants should be able to:     
+1. Perform the test in R   
+2. Interpret the output   
+3. Check the assumptions of the test   
+4. Carry out a “post-hoc” test if appropriate   
+
+#### Background
+
+This practical focuses on the implementation of various statistical tests relating to categorical predictors. These boil down to ANOVA and Kruskal Wallace (which is a non-parametric alternative).
+
+For each test there will be a section that
+* explains the purpose of the test,   
+* explains how to visualise the data,   
+* explains how to perform the test in R,   
+* explains how to interpret the output and report the results, and  
+* explains how to assess the assumptions required to perform the test.  
+
+***
+
+## 1. Datasets
+There are several datasets necessary for this practical. They are all stored on the on the Moodle site in the CS2 folder. Please download these now into your working directory.
+
+#### Set as working directory
+
+```{r}
+setwd("~/gsls_corestats/CS2 - Single Categorical Data")
+```
+***
+## 2. ANOVA
+
+### 2.1 Purpose and Aim
+Analysis of variance or ANOVA is a test than can be used when we have multiple samples of continuous data. Whilst it is possible to use ANOVA with only two samples, it is generally used when we have three or more groups. It is used to find out if the samples came from parent distributions with the same mean. It can be thought of as a generalisation of the two-sample Student’s t-test.
+
+### 2.2 Section Commands
+New commands used in this section.
+
+'lm()'        *Fits the linear model*
+
+'anova()'     *Carries out an ANOVA analysis on a linear model*
+
+### 2.3 Data and Hypotheses
+For example, suppose we measure the feeding rate of oystercatchers (shellfish per hour) at three sites characterised by their degree of shelter from the wind, imaginatively called “exposed”, “partially sheltered” and “sheltered”. We want to test whether the data support the hypothesis that feeding rates don’t differ between locations. We form the following null and alternative hypotheses:
+* H0: The mean feeding rates at all three sites is the same μE = μP = μS.
+* H1: The mean feeding rates are not all equal.
+We will use a one-way ANOVA test to check this.
+* We use a one-way ANOVA test because we only have one predictor variable (the categorical variable location).
+* We’re using ANOVA because we have more than two groups and we don’t know any better yet with respect to the exact assumptions.
+
+#### Load oystercatcher
+```{r}
+oystercatcherdf<-read.csv(file="CS2-oystercatcher.csv", header = T)
+oystercatcherdf
+```
+
+### 2.4 Summarise and visualise oystercatcherdf
+```{r}
+aggregate(feeding~site, data=oystercatcherdf, summary)
+summary(oystercatcherdf)
+boxplot(feeding~site, data=oystercatcherdf)
+```
+The data are in stacked format. The first column contains information on feeding rates and is called feeding. The second column has categorical data on the type of site and is called site. Looking at the data, there appears to be a noticeable difference in feeding rates between the three sites. We would probably expect a reasonably significant statistical result here.
+
+### 2.5 Implement ANOVA
+```{r}
+lm.oystercatcher<-lm(feeding~site, data=oystercatcherdf)
+anova(lm.oystercatcher)
+```
+
+The first line fits a linear model to the data (i.e. finds the means of the three groups and calculates a load of intermediary data that we need for the statistical analysis) and stores this information in an R object (which I’ve called lm.oystercatchers, but which you can call what you like). The second line actually carries out the ANOVA analysis.
+* The first argument must be in the formula format: response~predictor.
+* If the data are stored in stacked format, then the second argument must be the name of the data frame.
+* The anova command takes a linear model object as its main argument.
+
+### 2.6 Interpreting the output and reporting the results
+
+The 1st line just tells you the that this is an ANOVA test
+The 2nd line tells you what the response variable is (in this case feeding)
+The 3rd, 4th and 5th lines are an ANOVA table which contain some useful values:
+
+The Df column contains the degrees of freedom values on each row, 2 and 12 (which we’ll need for the reporting)
+* The F value column contains the F statistic, 21.508 (which again we’ll need for reporting).
+* The p-value is 0.0001077 and is the number directly under the Pr(>F) on the 4th line.
+* The other values in the table (in the Sum Sq and Mean Sq) column are used to calculate the F statistic itself and we don’t need to know these.
+The 6th line has some symbolic codes to represent how big (small) the p-value is; so, a p-value smaller than 0.001 would have a *** symbol next to it (which ours does). Whereas if the p-value was between 0.01 and 0.05 then there would simply be a * character next to it, etc. Thankfully we can all cope with actual numbers and don’t need a short-hand code to determine the reporting of our experiments.
+
+Again, the p-value is what we’re most interested in here and shows us the probability of getting samples such as ours if the null hypothesis were actually true.
+
+Since the p-value is very small (much smaller than the standard significance level of 0.05) we can say “that it is very unlikely that these three samples came from the same parent distribution” and as such we can reject our null hypothesis and state that:
+
+__A one-way ANOVA showed that the mean feeding rate of oystercatchers differed significantly between locations (F=21.51, df=2,12, p=0.00011).__
+
+Note that we have included (in brackets) information on the test statistic (F=21.51), both degrees of freedom (df=2,12), and the p-value (p=0.00011).
+
+### 2.7 Assumptions 
+
+In order to use an ANOVA test, we have to make three assumptions:
+1. The parent distributions from which the samples are taken are normally distributed.
+2. Each data point in the samples is independent of the others.
+3. The parent distributions should have the same variance.
+
+In a similar way to the two sample tests we will consider the normality and equality of variance assumptions both using tests and by graphical inspection (and ignore the independence assumption).
+
+#### 2.7.1 Normality
+
+##### Unstack the data
+```{r}
+uns.oyster<-unstack(oystercatcherdf)
+uns.oyster
+```
+
+##### Perform shapiro-wilks on each data set
+```{r}
+shapiro.test(uns.oyster$Exposed)
+shapiro.test(uns.oyster$Partial)
+shapiro.test(uns.oyster$Sheltered)
+```
+__All data sets are normally distributed__
+
+For ANOVA however, considering each group in turn is often considered quite excessive and, in most cases, it is sufficient to consider the normality of the combined set of “residuals” from the data. We’ll explain residuals properly in the next session. The residuals can be obtained directly from the linear model we fitted earlier.
+
+##### Extract the residuals from the data and check normality
+```{r}
+resid.oyster<-residuals(lm.oystercatcher)
+shapiro.test(resid.oyster)
+```
+Again, we can see that the combined residuals from all three groups appear to be normally distributed (which is as we would have expected given that they were all normally distributed individually!)
+
+#### 2.7.2 Equality of Variance
+
+Using bartlett test - as data is normally distributed
+
+```{r}
+bartlett.test(feeding~site, data=oystercatcherdf)
+```
+
+__Groups have the same variance__
+
+#### 2.7.3 Graphical interpretation and diagnostic plots
+
+R provides a convenient set of graphs that allow us to assess these assumptions graphically. If we simply ask R to plot the lm object we have created, then we can see some of these “diagnostic plots”.
+
+##### Create the standard four diagnostic plots
+```{r}
+par(mfrow=c(2,2))
+plot(lm.oystercatcher)
+```
+
+The first line set up the output window to put all four plots next to each other in a 2x2 grid.(N.B. If you’ve adjusted your RStudio screen so that the plotting window is too small then you won’t see anything).
+
+The second creates the four plots:
+
+In this example, three of the plots (top-left, bottom-left and bottom-right) show effectively the same thing: what the distribution of data between each group look like. These allow an informal check on the equality of variance assumption.
+*For the top-left and bottom right graphs we want all data to be symmetric about the 0 horizontal line and for the spread to be the same (please ignore the red line; it is an unhelpful addition to these graphs).
+*For the bottom-left graph we can look at the red line as we want it to be approximately horizontal.
+*The top-right graph is a familiar QQ-plot that we used previously to assess normality, and this looks at the combined residuals from all of the groups (in much the same way as we looked at the Shapiro-Wilk test on the combined residuals).
+
+We can see that these graphs are very much in line with what we’ve just looked at using the test, which is reassuring. The groups all appear to have the same spread of data, and whilst the QQ-plot isn’t perfect, it appears that the assumption of normality is ok.
+
+*Nb. At this stage, I should point out that I nearly always stick with the graphical method for assessing the assumptions of a test. Assumptions are rarely either completely met or not met and there is always some degree of personal assessment. Whilst the formal statistical tests are technically fine, they can often create a false sense of things being absolutely right or wrong in spite of the fact that they themselves are still probabilistic statistical tests. In these exercises we are using both approaches whilst you gain confidence and experience in interpreting the graphical output and whilst it is absolutely fine to use both in the future I would strongly recommend that you don’t rely solely on the statistical tests in isolation.*
+
+****
+
+### 2.8 Post-hoc testing
+
+One drawback with using an ANOVA test is that it only tests to see if all of the means are the same, and if we get a significant result using ANOVA then all we can say is that not all of the means are the same, rather than anything about how the pairs of groups differ. For example, consider the following boxplot for three samples.
+
+![Post Hoc Graph](C:/Users/Liana/Documents/gsls_corestats/images/posthoc_graphexample.png)
+
+Each group is a random sample of 20 points from a normal distribution with variance 1. Groups 1 and 2 come from a parent population with mean 0 whereas group 3 come from a parent population with mean 2. The data clearly satisfy the assumptions of an ANOVA test.
+
+##### Summarise and Visualise
+```{r}
+tukeydf<-read.csv(file="CS2-tukey.csv",header=T)
+summary(tukeydf)
+boxplot(response~group,data=tukeydf)
+```
+
+##### Test for significant difference in group means
+```{r}
+lm.tukey<-lm(response~group, data=tukeydf)
+anova(lm.tukey)
+```
+
+Here we have a p-value of 2.39x10-7 and so the test has very conclusively rejected the hypothesis that all means are equal.
+However, this was not due to all of the sample means being different, but rather just because one of the groups is very different from the others. In order to drill down and investigate this further we use a new test called Tukey’s range test (or Tukey’s honest significant difference test – this always makes me think of some terrible cowboy/western dialogue). This will compare all of the groups in a pairwise fashion and reports on whether a significant difference exists.
+
+##### Performing Tukey's test on the data
+```{r}
+aov.tukey<-aov(response~group, data=tukeydf)
+TukeyHSD(aov.tukey)
+# The first argument repeats our ANOVA using a different function (aov()). We store the output of this function in an R object called aov.tukey.
+# Note that the TukeyHSD function takes the output of the aov function as its argument and not the raw data.
+```
+The bottom three lines contain the information that we want. The final column of each (entitled p adj) is the p-value that we’re looking for. The null hypothesis in each case is that there is no difference in the mean between the two groups. As we can see the first line shows that there isn’t a significant difference between sample1 and sample 2 but the 2nd and 3rd lines show that there is a significant difference between sample 1 and sample 3 and sample 2 and sample 3, as we would expect from the boxplot.
+
+#### 2.8.1 Assumptions
+When to use Tukey’s range test is a matter of debate (strangely enough a lot of statistical analysis techniques are currently matters of opinion rather than mathematical fact – it does explain a little why this whole field appears so bloody confusing!)      
+* Some “experts” claim that we should only perform Tukey’s range test (or any other post-hoc tests) if the preceding ANOVA test showed that there was a significant difference between the groups and that if the ANOVA test had not shown any significant differences between groups then we would have to stop there.       
+* Other “experts” say that this is rubbish and we can do what the hell we like, when we like as long as we tell people what we did.
+The background to this is rather involved but one of the reasons for this debate is to prevent so-called “data-dredging” or “p-hacking”. This is where scientists/analysts are so fixated on getting a “significant” result that they perform a huge variety of statistical techniques until they find one that shows that their data is significant (this was a particular problem in psychological studies for while – not to point fingers though).      
+
+Whether you should use post-hoc testing or not will depend on your experimental design and the questions that you’re attempting to answer.
+Tukey’s range test, when we decide to use it, requires the same three assumptions as an ANOVA test:     
+1. Normality of distributions    
+2. Equality of variance between groups    
+3. Independence of observations     
+
+******
+
+## 3. Kruskal-Wallis Test
+
+### 3.1 Purpose and Aim
+
+The Kruskal-Wallis one-way analysis of variance test is an analogue of ANOVA that can be used when the **assumption of normality cannot be met**. In this way it is an extension of the Mann-Whitney test for two groups.
+
+### 3.2 Section Commands
+
+New commands used in this section.
+
+'kruskal.test()'        *Perform the Kruskal-Wallis test*
+
+'dunn.test()'           *Perform Dunn's test*
+
+### 3.3 Data and hypotheses
+
+For example, suppose a behavioural ecologist records the rate at which spider monkeys behaved aggressively towards one another as a function of closely related the two monkeys are. The familiarity of the two monkeys involved in each interaction is classified as “high”, “low” or “none”. We want to test whether the data support the hypothesis that aggression rates differ according to strength of relatedness. We form the following null and alternative hypotheses:
+* H0: The median aggression rates for all types of familiarity are the same.   
+* H1: The median aggression rates are not all equal.     
+We will use a Kruskal Wallis test to check this.
+
+```{r}
+spidermonkeydf<-read.csv(file="CS2-spidermonkey.csv")
+spidermonkeydf
+```
+
+#### Aggregate, summarise and visualise the data
+
+```{r}
+aggregate(aggression~familiarity, data=spidermonkeydf, summary)
+summary(spidermonkeydf)
+boxplot(aggression~familiarity, data=spidermonkeydf)
+```
+
+The data appear to show a very significant difference in aggression rates between the three types of familiarity. We would probably expect a reasonably significant result here.
+
+#### Implement the test
+
+```{r}
+kruskal.test(aggression~familiarity, data=spidermonkeydf)
+```
+
+The first argument must be in the formula format: variables~category.
+If the data are stored in stacked format, then the second argument must be the name of the data frame.
+
+The p-value is given in the 3rd line. This shows us the probability of getting samples such as ours if the null hypothesis were actually true. Since the p-value is very small (much smaller than the standard significance level of 0.05) we can say “that it is very unlikely that these three samples came from the same parent distribution and as such we can reject our null hypothesis and state that:
+
+__A one-way Kruskal-Wallis rank sum test showed that aggression rates between spider monkeys depends upon the degree of familiarity between them (KW=13.597, df=2, p=0.0011).__
+
+### 3.7 Assumptions
+
+In order to use the Kruskal-Wallis test we have to make three assumptions:
+1. The parent distributions from which the samples are drawn have the same shape (if they’re normal then we should use a one-way ANOVA).
+2. Each data point in the samples is independent of the others.
+3. The parent distributions should have the same variance.
+
+*Independence we’ll ignore as usual. Similar shape is best assessed from the earlier visualisation of the data. That means that we only need to check equality of variance.*
+
+### 3.7.1 Equality of Variance
+We test for equality of variance using Levene’s test (since we can’t assume normal parent distributions which rules out Bartlett’s test).
+
+*Levene’s test is not included in the default R packages and may require the installation of an additional package called car (Companion to Applied Regression).*
+
+#### Load car package
+```{r}
+library(car)
+```
+
+#### Perform Levenes test
+```{r}
+leveneTest(aggression~familiarity, data=spidermonkeydf)
+```
+Where the relevant p-value is given on the 3rd line. As it is quite large we see that each group do appear to have the same variance.
+
+## 8.3 Post-hoc testing
+
+The equivalent of Tukey’s range test for non-normal data is Dunn’s test.
+Dunn’s test is also not included in the default R packages and may require the installation of an additional package called dunn.test.
+
+#### Load dunn.test
+```{r}
+library(dunn.test)
+```
+
+#### Perform dunn.test
+
+```{r}
+dunn.test(spidermonkeydf$aggression , spidermonkeydf$familiarity)
+```
+You can see that the dunn.test() function also performs a Kruskal-Wallis test on the data, and these results are reported initially.
+The comparison between the pairs of groups is reported in the table at the bottom. Each cell in the table has two rows. The bottom row contains the p-values that we want. This table shows that there isn’t a significant difference between the high and low groups, as the p-value (0.0799) is too high. The other two comparisons between the high familiarity an no familiarity groups and between the low and no groups are significant though.
+
+******
+
+## 4 Generating Random Numbers (Optional)
+R has the ability to generate random numbers that follow a large variety of standard distributions. Here, we’re going to generate some pseudo-data that follow either a normal distribution or a uniform distribution and use these data to explore the sensitivity of ANOVA and Kruskal-Wallace tests to the distribution assumptions.
+
+### 4.1 Section Commands
+New commands used in this section.
+
+runif()       *Generate random numbers from a uniform distribution*
+rnorm()       *Generate random numbers from a normal distribution*
+rep()         *Creates a vector by repeating a given value*
+
+**runif()** takes three arguments:
+* The 1st argument is the number of random numbers to generate.
+* The 2nd argument is the lower bound of the uniform distribution.
+* The 3rd argument is the upper bound of the uniform distribution.
+e.g. runif(15,0,10) will return a vector of 15 random decimal uniformly distributed between 0 and 10.
+
+**rnorm()** also takes three arguments:
+* The 1st argument is the number of random numbers to generate.
+* The 2nd argument is the mean of the normal distribution.
+* The 3rd argument is the standard deviation of the normal distribution.
+e.g. rnorm(10,0,3) will return a vector of 10 random numbers from a normal distribution with mean 0 and standard deviation 3.
+
+In its simplest form **rep** takes two arguments:
+*The 1st argument gives the value that you want repeated.
+*The 2nd argument says how many times you want the value repeated.
+e.g. rep(4,3) will return the vector (4,4,4) and rep(“Deadly Sins”,7) will return a character vector of length 7 with each element of the vector being the character string “Deadly Sins”.
+
+### 4.2 Data Generation
+First, we're going to generate a data set to be the results of a fictional experiment. Say we collect fish from a given section (100m) of a river. We are interested in the type of fish, its size and the point in the river it came from as we think there may be a link between the fish's size, type and where it lives in the river.
+
+We collect three types of fish: Pike, Trout and Salmon (apologies to anyone who actually knows about fishing – this is not going to be a very plausible example). By a remarkable coincidence we collect equal numbers (50) of all three types of fish.
+It’s reasonable to assume that the size (length) of the fish that are caught follow a normal distribution.
+Generate the lengths of the 50 fishes in each group as three sets of random numbers.
+* The pike have an average length of 75cm.    
+* The salmon have an average length of 120cm.    
+* The trout have an average length of 60cm.   
+* The distributions of length for all species of fish have the same standard deviation, which is 7cm.
+
+```{r}
+pike.length<-rnorm(50,75,7)
+salmon.length<-rnorm(50,120,7)
+trout.length<-rnorm(50,60,7)
+```
+
+The point in the river at which we catch the fish could reasonably be assumed to follow a uniform distribution.
+Generate the locations at which each of the 50 fishes in each group were caught as three sets of random numbers.
+* The pike can be found anywhere on the river    
+* The salmon can be caught anywhere between 40m and 100m.   
+* The trout only can only be found between 0m and 60m.    
+
+```{r}
+pike.location<-runif(50,0,100)
+salmon.location<-runif(50,40,100)
+trout.location<-runif(50,0,60)
+```
+We’ve generated the raw length and position datasets but now we want to combine them into a single dataframe. This dataframe will contain the data on the position, length and species of a particular fish that was caught. Consequently this dataframe will have three columns, even though we will only ever use two of them at any one time in our subsequent analysis. This shouldn’t make any difference to our analysis but it will mean you have to think a little harder about what data you want to analyse at any given time.
+
+#### Generate species name vectors to record the type of each fish caught
+```{r}
+pike.species<-rep("pike",50)
+salmon.species<-rep("salmon",50)
+trout.species<-rep("trout",50)
+```
+#### Combine all of the data into a single dataframe object called GoneFishing
+```{r}
+gonefishingdf <- data.frame( length=c(pike.length,
+salmon.length, trout.length) , location=c(pike.location,
+salmon.location, trout.location),
+species=as.factor(c(pike.species, salmon.species,
+trout.species)))
+```
+This will create a dataframe with three columns (called length, location and species), and 150 rows (one for each observation).
+
+## 4.3 Data Analysis
+You will now have a single data frame of three variables: length, location and species. Length is normally distributed within each species and location is uniformly distributed within each species.
+
+#### Produce boxplots of both length against species and location against species.
+```{r}
+agg.length<-aggregate(length~species, data=gonefishingdf, summary)
+boxplot(length~species, data=agg.species)
+
+agg.location<-aggregate(location~species, data=gonefishingdf, summary)
+boxplot(location~species, data=agg.location)
+```
+Given what you know about how the data have been constructed:
+* Which test should you use to assess whether there are any differences in length between species?
+* Which test should you use to assess whether there are any differences in location between species?
+* What result do you expect from carrying out the different diagnostic tests? (Shapiro-Wilk, Bartlett’s, Levene’s etc.)
+
+### Carry out both and ANOVA test and a Kruskal-Wallis test on both the location and the length of the different fish species. 
+
+#### ANOVA
+```{r}
+lm.length<-lm(length~species, data=gonefishingdf)
+anova(lm.length)
+
+lm.location<-lm(location~species, data=gonefishingdf)
+anova(lm.location)
+```
+__ANSWER: Length, p-value of 2.2x10-16 and so the test has very conclusively rejected the hypothesis that all means are equal.Location, p-value of 5.47x10-15 and so the test has very conclusively rejected the hypothesis that all means are equal.__
+
+#### Tukeys post-hoc test
+
+```{r}
+aov.length<-aov(length~species, data=gonefishingdf)
+TukeyHSD(aov.length)
+
+aov.location<-aov(location~species, data=gonefishingdf)
+TukeyHSD(aov.location)
+```
+
+#### Kruskal-wallis test
+
+```{r}
+kruskal.test(length~species, data=gonefishingdf)
+kruskal.test(location~species, data = gonefishingdf)
+```
+
+```{r}
+dunn.test(gonefishingdf$length, gonefishingdf$species)
+dunn.test(gonefishingdf$location, gonefishingdf$species)
+```
+
+#### Compare the results of the various diagnostic tests (normality and equality of variance) for each one. 
+
+
+
+
+#### Carry-out a post-hoc test if appropriate.

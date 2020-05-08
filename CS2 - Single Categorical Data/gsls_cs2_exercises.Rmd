@@ -1,0 +1,87 @@
+---
+title: "GSLS - CS2 Exercises"
+author: Liana Hardy
+date: 2020-05-08
+output: html_notebook
+---
+
+## 2.9 Exercise
+Juvenile lobsters in aquaculture were grown on three different diets (fresh mussels, semi-dry pellets and dry flakes). After nine weeks, their wet weight was:
+
+```{r}
+lobstersdf<-read.csv(file='CS2-lobsters.csv')
+lobstersdf
+```
+
+### Hypotheses
+
+* H0: The mean weight of lobsters of all diets is the same μM = μP = μF.
+* H1: The mean weights are not all equal.
+
+### Aggregate, Summarise and Visualise
+```{r}
+aggregate(weight~diet, data=lobstersdf, summary)
+summary(lobstersdf)
+boxplot(weight~diet, data=lobstersdf)
+```
+### Perform an ANOVA on linearised data
+```{r}
+lm.lobster<-lm(weight~diet, data=lobstersdf)
+anova(lm.lobster)
+```
+__A one-way ANOVA showed that the mean weight of lobsters is not significantly different between diets (F=1.64, df=2,15, p=0.2263)__
+
+### Check Assumptions - normality   
+
+#### Unstack the data
+```{r}
+uns.lobsters<-unstack(lobstersdf)
+uns.lobsters
+```
+
+#### Perform Shapiro-wilks on each data set
+```{r}
+shapiro.test(uns.lobsters$Flakes)
+shapiro.test(uns.lobsters$Mussels)
+shapiro.test(uns.lobsters$Pellets)
+
+qqnorm(uns.lobsters$Pellets)
+qqline(uns.lobsters$Pellets)
+```
+__Shapiro.wilks test shows Flakes and Mussels datasets show normal distribution, however Pellets <0.05. Shapiro-Wilks is sensitive to sample size. Q-Q plot shows an outlier but overall with p-value = 0.0425 and Q-Q plot I am happy with the assumption that these data-sets are normally distributed.__
+
+
+### Check assumptions - variance
+
+```{r}
+bartlett.test(weight~diet, data=lobstersdf)
+```
+__Bartletts test of homogeneity of variances infers that data sets have equal variances.__
+
+### Perform Post-Hoc test
+
+#### Tukeys test
+```{r}
+aov.lobster<-aov(weight~diet, data=lobstersdf)
+TukeyHSD(aov.lobster)
+```
+
+### Report the findings 
+
+__One-way ANOVA and Tukeys test shows that the mean weight of lobsters is not different between any of the three diets (p>0.05).__
+
+*****
+
+### Perform Kruskal-Wallis test
+```{r}
+kruskal.test(weight~diet, data=lobstersdf)
+```
+
+## Perform dunn.test - post-hoc test
+```{r}
+library(dunn.test)
+dunn.test(lobstersdf$weight, lobstersdf$diet)
+```
+
+__Kruskal-Wallis and dunn test show that weight of lobsters fed on mussels is significantly different than flakes (p-value = 0.037)__
+
