@@ -1,8 +1,10 @@
 ---
 title: "GSLS - CS2 Single Categorical Data"
-author: Liana Hardy
-date: 2020-05-08
-output: html_notebook
+author: "Liana Hardy"
+date: '2020-05-08'
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 #### Aim:
@@ -395,15 +397,15 @@ You will now have a single data frame of three variables: length, location and s
 #### Produce boxplots of both length against species and location against species.
 ```{r}
 agg.length<-aggregate(length~species, data=gonefishingdf, summary)
-boxplot(length~species, data=agg.species)
+boxplot(length~species, data=agg.length)
 
 agg.location<-aggregate(location~species, data=gonefishingdf, summary)
 boxplot(location~species, data=agg.location)
 ```
 Given what you know about how the data have been constructed:
-* Which test should you use to assess whether there are any differences in length between species?
-* Which test should you use to assess whether there are any differences in location between species?
-* What result do you expect from carrying out the different diagnostic tests? (Shapiro-Wilk, Bartlett’s, Levene’s etc.)
+* Which test should you use to assess whether there are any differences in length between species?    
+* Which test should you use to assess whether there are any differences in location between species?     
+* What result do you expect from carrying out the different diagnostic tests? (Shapiro-Wilk, Bartlett’s, Levene’s etc.)     
 
 ### Carry out both and ANOVA test and a Kruskal-Wallis test on both the location and the length of the different fish species. 
 
@@ -439,9 +441,15 @@ dunn.test(gonefishingdf$length, gonefishingdf$species)
 dunn.test(gonefishingdf$location, gonefishingdf$species)
 ```
 
-#### Compare the results of the various diagnostic tests (normality and equality of variance) for each one. 
+#### Compare the results of the various diagnostic tests (normality and equality of variance) for each one.
+```{r}
+par(mfrow=c(2,2))
+plot(lm.length)
+```
 
+```{r}
+par(mfrow=c(2,2))
+plot(lm.location)
+```
 
-
-
-#### Carry-out a post-hoc test if appropriate.
+#### Carry-out a post-hoc test if appropriate (see above).

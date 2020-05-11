@@ -31,7 +31,13 @@ anova(lm.lobster)
 ```
 __A one-way ANOVA showed that the mean weight of lobsters is not significantly different between diets (F=1.64, df=2,15, p=0.2263)__
 
-### Check Assumptions - normality   
+### Check Assumptions - normality  
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm.lobster)
+```
+
 
 #### Unstack the data
 ```{r}
@@ -77,7 +83,7 @@ __One-way ANOVA and Tukeys test shows that the mean weight of lobsters is not di
 kruskal.test(weight~diet, data=lobstersdf)
 ```
 
-## Perform dunn.test - post-hoc test
+#### Perform dunn.test - post-hoc test
 ```{r}
 library(dunn.test)
 dunn.test(lobstersdf$weight, lobstersdf$diet)
@@ -85,3 +91,36 @@ dunn.test(lobstersdf$weight, lobstersdf$diet)
 
 __Kruskal-Wallis and dunn test show that weight of lobsters fed on mussels is significantly different than flakes (p-value = 0.037)__
 
+## Revision Exercise
+
+#### Open clean data csv file 
+
+```{r}
+drugdf<-read.csv(file="cs2revision_data_clean.csv",header=T)
+drugdf
+```
+#### Aggregate, visualise and summarise the data
+```{r}
+aggregate(Value~Drug, data=drugdf, summary)
+summary(drugdf)
+boxplot(Value~Drug, data=drugdf)
+```
+#### Perform ANOVA
+```{r}
+lm.drugs<-lm(Value~Drug, data=drugdf)
+anova(lm.drugs)
+```
+
+#### Diagnostic plots
+```{r}
+par(mfrow=c(2,2))
+plot(lm.drugs)
+```
+
+
+```{r}
+aov.drugs<-aov(Value~Drug, data=drugdf)
+TukeyHSD(aov.drugs)
+
+```
+__ Assumptions for ANOVA and Tukeys test are met so we can say that these drugs do not differ significantly__
