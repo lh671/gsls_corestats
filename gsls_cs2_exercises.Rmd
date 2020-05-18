@@ -2,9 +2,7 @@
 title: "GSLS - CS2 Exercises"
 author: "Liana Hardy"
 date: '2020-05-08'
-output:
-  pdf_document: default
-  html_notebook: default
+output: html_notebook
 ---
 
 ## 2.9 Exercise

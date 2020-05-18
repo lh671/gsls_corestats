@@ -2,8 +2,15 @@
 title: "GSLS - CS1 Simple Hypothesis Testing"
 author: "Liana Hardy"
 date: '2020-05-04'
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
+```{r}
+library(tidyverse)
+library(knitr)
+library(rmarkdown)
+```
 
 ## 3. One-Sample Tests
 

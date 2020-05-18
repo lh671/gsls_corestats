@@ -2,9 +2,7 @@
 title: "GSLS CS3- Single Contiunous Data"
 author: "Liana Hardy"
 date: '2020-05-11'
-output:
-  pdf_document: default
-  html_notebook: default
+output: html_notebook
 ---
 
 #### Aim:

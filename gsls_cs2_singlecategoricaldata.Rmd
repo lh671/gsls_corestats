@@ -2,7 +2,7 @@
 title: "GSLS - CS2 Single Categorical Data"
 author: "Liana Hardy"
 date: '2020-05-08'
-output: pdf_document
+output: html_notebook
 ---
 
 #### Aim:
@@ -35,11 +35,6 @@ For each test there will be a section that
 ## 1. Datasets
 There are several datasets necessary for this practical. They are all stored on the on the Moodle site in the CS2 folder. Please download these now into your working directory.
 
-#### Set as working directory
-
-```{r}
-setwd("~/gsls_corestats/CS2 - Single Categorical Data")
-```
 ***
 ## 2. ANOVA
 

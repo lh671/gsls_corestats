@@ -1,0 +1,579 @@
+---
+title: "GSLS CS4 - Two Predictor Variables"
+author: Liana Hardy
+date: 2020-05-18
+output: html_notebook
+---
+
+#### Aim:
+To introduce R commands for carrying out two-way ANOVA and linear regression with grouped data/ANCOVA
+
+#### Goals
+By the end of this practical participants should be able to achieve the following:    
+1. Carry out a two-way ANOVA using R and interpret the output      
+2. Analyse linear regression with grouped data (ANCOVA)      
+
+#### Background
+This practical focuses on the implementation of various statistical tests relating to multiple predictor variables in R. It does not focus on the underlying theory of the tests (although the demonstrators will be happy to answer any questions that you may have).
+For each test there will be a section explain how to perform the test in, a section explaining the results that have been output to the screen, and an exercise for you to complete relating to the test itself.
+
+*******
+
+## 1 Two-Way ANOVA
+### 1.1 Background
+A two-way analysis of variance is used when we have two categorical predictor variables (or factors) and a single continuous response variable e.g. looking at how body weight (cts: kg) is affected by gender (categorical: M or F) and exercise type (categorical: Control or Runner).
+
+When analysing this type of data there are two things we want to know:      
+1. Does either of the predictor variables have an effect on the response variable i.e. does gender affect body weight? Or does being a runner affect body weight?      
+2. Is there any interaction between the two predictor variables? An interaction would mean that the effect that exercise has on your weight depends on whether you are male or female rather than being independent of your gender, so for example if being male means that runners weight more than non-runners, but being female means that runners weight less than non-runners then we would say that there was an interaction.      
+
+We will first consider how to visualise the data before then carrying out an appropriate statistical test.
+
+### 1.2 Section Commands
+
+Commands used in this section.
+
+'boxplot'              *creates a boxplot*           
+'interaction.plot'     *creates an interaction plot*      
+'aov()'                *carry out an ANOVA test*
+
+### 1.3 Analysis
+
+```{r}
+Experiment <-read.csv(file="CS4-exercise.csv", header=T)
+Experiment
+```
+Experiment is a dataframe with three variables; Weight, Gender and Exercise. Weight is the continuous response variable, whereas Gender and Exercise are the categorical predictor variables.
+
+#### Visualise the data
+```{r}
+boxplot(Weight~Gender,data=Experiment, main="Gender", xlab="Gender", ylab="Weight (kg)")
+boxplot(Weight~Exercise, data=Experiment)
+```
+produce basic boxplots showing the response variable (Weight) only in terms of one of the predictor variables. The values of the other predictor variable in each case aren’t taken into account. The argument Weight~Gender (or Weight~Exercise) is key here. It tells R to treat Weight as a function of Gender only (or as a function of Exercise only.)
+
+These are also very basic plots just showing the raw data and using default arguments.
+
+(Optional) Add titles, axis labels and any other information that you see fit to the plots to make them presentable.
+Visualise both predictor variables together
+
+#### Visualise data together
+```{r}
+boxplot(Weight~Gender+Exercise, data=Experiment, main="Weight of Male and Female with exercise variable")
+```
+This produces boxplots for all (four) combinations of the predictor variables. The key argument here is Weight~Gender+Exercise. This tells R to treat Weight as a function of both Gender and Exercise. The + symbol does not mean to add the numbers together, but that Weight should be treated as a function of Gender plus Exercise.
+
+*(Optional) Add titles, axis labels and any other information that you see fit to the plot to make it presentable.*
+
+In this example there are only four boxplots and so it is relatively easy to compare them and look for any interactions between variables, but if there were more than two levels (groups) per categorical variable, it would become harder to spot what was going on. To compare categorical variables more easily we just plot the group means which aids our ability to look for interactions and the main effects of each predictor variable.
+
+#### Create an interaction plot
+```{r}
+interaction.plot(Experiment$Gender, Experiment$Exercise, Experiment$Weight)
+```
+The first argument defines the categorical variable that will be used for the horizontal axis. This must be a factor vector (if it comes from a dataframe then it will automatically be a factor). In this function this is called the x.factor.     
+* The second argument defines the categorical variable that will be used for the different lines to be plotted. This must be a factor vector. In this function this is called the trace.factor.      
+* The third argument defines the response variable that will be used for the vertical axis. This must be a numerical vector. In this function this argument is called the response.       
+
+**It’s common to get the order of these arguments muddled up. Remember that it’s the third argument that defines the variable that goes on the vertical axis!**
+
+```{r}
+interaction.plot(Experiment$Gender, Experiment$Exercise, Experiment$Weight, xlab="Gender", ylab="Weight (kg)", trace.label="Exercise", type="b", pch=4, col=c("blue", "red"))
+```
+
+The choice of which categorical factor is plotted on the horizontal axis and which is plotted as different lines is completely arbitrary. Looking at the data both ways shouldn’t add anything but often you’ll find that you prefer one plot to another.
+
+#### Plot interaction the other way round
+```{r}
+interaction.plot(Experiment$Exercise, Experiment$Gender, Experiment$Weight, xlab="Exercise", ylab="Weight (kg)", trace.label="Gender", type="b", pch=4, col=c("pink", "grey"))
+```
+*(Optional) Add titles, axis labels and any other information that you see fit to the plot to make it presentable.*
+
+By now you should have a good feeling for the data and could already provide some guesses to the following three questions:
+Does there appear to be any interaction between the two categorical variables?
+If not:
+* Does Exercise have an effect on Weight?     
+* Does Gender have an effect on Weight?     
+We can now attempt to answer these three questions more formally using an ANOVA test. We have to ask R explicitly to test for three things: the interaction, the effect of Exercise and the effect of Gender. We use the following code:
+
+#### Perform ANOVA
+```{r}
+lm.exercise<-lm(Weight~Gender + Exercise + Gender:Exercise, data=Experiment)
+anova(lm.exercise)
+```
+
+The Gender:Exercise term is how R represents the concept of an interaction between these two variables.
+
+We have a row in the table for each of the different effects that we’ve asked R to consider. The last column is the important one as this contains the p-values (although we will also need the F-values and the degrees of freedom for reporting purposes). We need to look at the interaction row first.
+Gender:Exercise has a p-value of about 0.028 (which is smaller than 0.05) and so we can conclude that the interaction between Gender and Exercise is significant.
+This is where we must stop.
+The top two lines (corresponding to the effects of Gender and Exercise) are meaningless now and the p-values that have been reported are utterly redundant (in particular we do not in any way care that their p-values are so small). If a model has a significant interaction then it is logically impossible to meaningfully interpret the main effects.
+
+__A two-way ANOVA test showed that there was a significant interaction between the effects of Gender and Exercise on Weight (F=5.8521 , df=1,16 , p=0.028). Exercise was associated with a small loss of weight in males but a larger loss of weight in females.__
+
+### 1.4 Assumptions
+As the two-way ANOVA is a type of linear model we need to satisfy pretty much the same assumptions as we did for a simple linear regression or a one-way ANOVA:     
+1. The data must not have any systematic pattern to it     
+2. The residuals must be normally distributed      
+3. The residuals must have homogeneity of variance     
+4. The fit should not depend overly much on a single point (no point should have high leverage).     
+
+#### Check assumptions using diagnostic plots
+```{r}
+par(mfrow=c(2,2))
+plot(lm.exercise)
+```
+The first command changes the plotting parameters and splits the graphics window into 2 rows and 2 columns (you won’t notice anything whilst you run it).
+The second command produces 4 plots in the graphics window
+
+* The top left graph plots the residuals against the fitted values. There is no systematic pattern here and this plot is pretty good       
+* The top right graph allows a visual inspection of normality. Again, this looks ok (not perfect but ok).      
+* The bottom left graph allows us to investigate whether there is homogeneity of variance. This plot is fine (not perfect but fine).  
+* Because all of our groups have exactly the same number of points in them, the bottom right plot is functionally just a repeat of the top-left plot. There’s still nothing to worry about here.      
+
+
+### 1.5 R Syntax
+
+There is a shorthand way of writing: 'Weight~Gender+Exercise+Gender:Exercise'
+If you use the following syntax: 'Weight~Gender*Exercise'
+Then R interprets it exactly the same way as writing all three terms.
+
+#### Using R Syntax
+```{r}
+anova(lm(Weight~Gender*Exercise,data=Experiment))
+```
+*****
+## 2 Two-way ANOVA Exercise
+
+### 2.1 Data Generation
+For this exercise we will generate some data ourselves within R (rather than writing it into excel and importing it) that we will then analyse using a two-way ANOVA test.
+
+This section does not contain new material: only manipulation of vectors, matrices and data frames in R. It will hopefully be good practice (notice I haven’t specified exactly what this will be practice of! – just trust me that this is good for you).
+
+### 2.2 Section Commands
+
+'data.frame'      *Creates a data frame*      
+'as.factor'       *Coerces a vector containing a string into a factor*
+
+### 2.3 Generating the data
+
+We will generate data from a fictional experiment that involves looking at the effect of different concentrations of a substance on the growth rate of two different cell types (all annoyingly vague I know – suggestions for context are welcome here!). There are two cell types and three concentrations.
+
+For each cell type we have a “control” experiment in which no substance is added (i.e. concentration is ‘none’); a “low” concentration of substance and a “high” concentration of substance. The cells are called “Type A” and “Type B”.
+
+For each combination of cell type and substance concentration we add the substance to an individual cell in a Petri dish and after 8 hours, we count the number of cells in the dish (Again this may well be biologically weird/impossible – suggestions are welcome). Each experiment is repeated three times.
+
+#### Create the data in R
+```{r}
+Vec1<-c(7,9,4,5,8,9,22,28,26,12,17,14,89,78,83,48,44,45)
+Vec2<-c(rep("None", 6), rep("Low", 6), rep("High",6))
+Vec3<-rep(c(rep("A", 3), rep("B", 3)), 3)
+Cells<-data.frame(Number=Vec1, Conc=as.factor(Vec2), Type=as.factor(Vec3))
+```
+* The first line creates a numeric vector containing the cell counts.     
+* The second line creates a character vector containing the concentration categories.       
+* The third line creates a character vector containing the cell types.       
+* The fourth line merges all of these three vectors together into a single dataframe object. The dataframe will be called Cells. It will have three variables called Number, Conc and Type. Each of these variables will contain one of the original vectors where the character vectors will have been converted in factors by the use of the as.factor() function         
+
+## 2.4 Questions
+1. Visualise the data using boxplots and interaction plots.
+2. Does there appear to be any interaction?
+3. Carry out a two-way ANOVA test.
+4. Check the assumptions.
+5. What can you conclude? (Write a sentence to summarise).
+
+#### Visualise the data
+
+```{r}
+boxplot(Number~Conc, data=Cells)
+boxplot(Number~Type, data=Cells)
+boxplot(Number~Conc+Type, data=Cells)
+```
+#### Create an interaction plot
+```{r}
+interaction.plot(Cells$Conc, Cells$Type, Cells$Number)
+
+interaction.plot(Cells$Conc, Cells$Type, Cells$Number, xlab="Concentration", ylab="Number", trace.label="Type", type="b", pch=4, col=c("orange", "green"))
+```
+
+#### Do an ANOVA test
+```{r}
+lm.cells<-lm(Number~Conc+Type+Conc:Type, data=Cells)
+anova(lm.cells)
+```
+
+#### Check Assumptions
+```{r}
+par(mfrow=c(2,2))
+plot(lm.cells)
+```
+Homogeneity of variance (bottom left, looks a bit odd). 
+
+#### Conclusions
+
+__A two-way ANOVA test showed that there was a significant interaction between the effects of Concentration and cell type (F=56.967, df=2,12, p=7.485e-07). Concentration was associated with a small increase in number of type B cells but a larger increase in number of type A cells.__ 
+
+*****
+### 2.5 Exercise
+
+The CS4-tulip.csv dataset contains information on an experiment to determine the best conditions for growing tulips (well someone has to care about these sorts of things!). The average number of flower heads (blooms) were recorded for 27 different plots. Each plot experienced one of three different watering regimes and one of three different shade regimes.
+
+Investigate how the number of blooms is affected by different growing conditions.
+
+```{r}
+tulips<-read.csv(file="CS4-tulip.csv", header=T)
+tulips
+```
+#### Visualise the data
+```{r}
+boxplot(Blooms~Shade, data=tulips)
+boxplot(Blooms~Water, data=tulips)
+boxplot(Blooms~Water+Shade, data=tulips)
+```
+
+#### Create an interaction plot
+```{r}
+interaction.plot(tulips$Water, tulips$Shade, tulips$Blooms)
+interaction.plot(tulips$Water, tulips$Shade, tulips$Blooms, xlab="Water", ylab="Blooms", trace.label="Shade", type="b", pch=4, col=c("orange", "green", "red"))
+```
+
+#### Perform an ANOVA
+```{r}
+lm.tulips<-lm(Blooms~Water+Shade+Water:Shade, data=tulips)
+anova(lm.tulips)
+```
+
+#### Check assumptions
+```{r}
+par(mfrow=c(2,2))
+plot(lm.tulips)
+```
+Looks okay. 
+
+#### Conclusion
+__A two-way ANOVA test showed that there was a significant interaction between the effects of water and shade (F=13.95, df=1,23, p=0.0011). Water was associated a large increase in blooms in plot 1 but had less of an affect on bloom number in plots 2 and 3__
+
+*****
+
+## 3 Linear regression with grouped data
+
+### 3.1 Background
+A linear regression analysis with grouped data is used when we have one categorical predictor variable (or factor), and one continuous predictor variable. The response variable must still be continuous however.
+
+For example in an experiment that looks at light intensity in woodland, how is light intensity (cts: lux) affected by the height at which the measurement is taken, recorded as depth measured from the top of the canopy (cts: m) and by the type of woodland (categorical: Conifer or Broadleaf).
+
+When analysing this type of data we want to know:
+1. Is there a difference between the groups?       
+2. Does the continuous predictor variable affect the continuous response variable (does canopy depth affect measured light intensity?)     
+3. Is there any interaction between the two predictor variables? Here an interaction would display itself as a difference in the slopes of the lines of best fit for each group, so for example perhaps the conifer dataset has a significantly steeper line than the broadleaf woodland dataset.     
+
+In this case, no interaction means that the lines of best fit will have the same slope. Essentially the analysis is identical to two-way ANOVA (and R doesn’t really notice the difference).
+1. We will plot the data and visually inspect it.      
+2. We will test for an interaction and if it doesn’t exist then:      
+a. We can test to see if either predictor variable has an effect (i.e. do the lines of best fit have different intercepts? and is the common gradient significantly different from zero?)
+We will first consider how to visualise the data before then carrying out an appropriate statistical test.
+
+### 3.2 Section commands
+
+'subset()'      *Creates a subset of a dataframe*
+
+### 3.3 Analysis
+
+The data are stored as a .csv file called CS4-treelight.csv.
+
+#### Download the file, read it in and look at the raw data
+```{r}
+Treelights<-read.csv(file="CS4-treelight.csv", header=T)
+Treelights
+```
+TreeLight is a dataframe with three variables; Light, Depth and Species. Light is the continuous response variable, Depth is the continuous predictor variable and Species is the categorical predictor variables.
+
+#### Visualise the data
+```{r}
+plot(Light~Depth, data=Treelights)
+```
+
+#### Create subsets and look at the raw data
+```{r}
+Conlight<-subset(Treelights, subset=(Species=="Conifer"))
+Brolight<-subset(Treelights, subset=(Species=="Broadleaf"))
+Conlight
+Brolight
+```
+The subset function creates subsets of dataframes. The first argument is the original dataframe, and the subset argument is a logical expression that defines which observations (rows) should be extracted. The logical expression must be enclosed in parentheses. In the first case it says (Species==“Conifer”). This tells R to only extract the rows of the original dataframe which have “Conifer” in the species variable column. Ditto for Broadleaf.
+
+We can use these smaller dataframes to distinguish between the points in the plot.
+
+#### Visualise
+```{r}
+plot(Light~Depth,data=Treelights,type="n")
+points(Light~Depth,data= Brolight,col= "blue")
+points(Light~Depth,data= Conlight,col="red")
+```
+You should now have a basic plot that looks similar to the figure above (but with different labels, no legend and different characters).
+*(Optional) Modify your graph to make it look the same as the above figure.*
+
+```{r}
+plot(Light~Depth,data=Treelights,type="n")
+points(Light~Depth,data= Brolight,col= "blue")
+points(Light~Depth,data= Conlight,col="red")
+lm.Conifer<-lm(Light~Depth,data=Conlight)
+lm.Broadleaf<-lm(Light~Depth, data=Brolight)
+abline(lm.Conifer, col="red")
+abline(lm.Broadleaf, col="blue")
+```
+Looking at this plot, there doesn’t appear to be any significant interaction between the woodland type (Broadleaf and Conifer) and the depth at which light measurements were taken (Depth) on the amount of light intensity getting through the canopy as the gradients of the two lines appear to be very similar. There does appear to be a noticeable slope to both lines and both lines look as though they have very different intercepts. All of this suggests that there isn’t any interaction but that both Depth and Species have a significant effect on Light independently. We will now test this more formally.
+
+#### Perform ANOVA
+```{r}
+anova(lm(Light~Depth*Species, data=Treelights))
+```
+_Remember that Depth*Species is a shorthand way of writing the full set of Depth+Species+Depth:Species terms in R i.e. both main effects and the interaction effect._
+
+As with two-way ANOVA we have a row in the table for each of the different effects that we’ve asked R to consider. The last column is the important one as this contains the p-values. We need to look at the interaction row first.
+
+__Depth:Species has a p-value of 0.393 (which is bigger than 0.05) and so we can conclude that the interaction between Depth and Species isn’t significant. As such we can now consider whether each of the predictor variables independently has an effect. Both Depth and Species have very small p-values (2.86x10-9 and 4.13x10-11) and so we can conclude that they do have a significant effect on Light.__
+
+This means that the two lines of best fit should have the same non-zero slope, but different intercepts. We would now like to know what those values are.
+
+### 3.4 Interpreting R output
+
+Unfortunately, R doesn’t make this obvious and easy for us and there is some deciphering required getting this right.
+For a simple straight line such as the linear regression for the conifer dataset by itself, the output is relatively straightforward.
+
+```{r}
+lm(Light~Depth,data=Conlight)
+```
+And we can interpret this as meaning that the intercept of the line of best fit is 5014 and the coefficient of the depth variable (the number in front of it in the equation) is -292.2.
+__So, the equation of the line of best fit is given by: Light = 5014 + -292.2 x Depth__
+
+This came from fitting a simple linear model using the conifer dataset, and has the meaning that for every extra 1m of depth of canopy a forest has we lose 292.2 lux of light.
+
+When we looked at the full dataset, we found that interaction wasn’t important. This means that we will have a model with two distinct intercepts but only a single slope (that’s what you get for a linear regression without any interaction), so we need to ask R to calculate that specific combination. The command for that is simply
+
+```{r}
+lm(Light~Depth+Species, data=Treelights)
+```
+_Notice the + symbol in the argument, as opposed to the * symbol used earlier. This means that we are explicitly not including an interaction term in this fit, and consequently we are forcing R to calculate the equation of lines which have the same gradient._
+
+Ideally we would like R to give us two equations, one for each forest type, so four parameters in total. Unfortunately, R is parsimonious and doesn’t do that. Instead R gives you three coefficients, and these require a bit of interpretation.
+The first two numbers that R returns (underneath Intercept and Depth) are the exact intercept and slope coefficients for one of the lines (in this case they correspond to the data for Broadleaf woodlands).
+
+For the coefficients belonging to the other line, R uses these first two coefficients as baseline values and expresses the other coefficients relative to these ones. R also doesn’t tell you explicitly which group it is using as its baseline reference group!
+
+First of all, I need to work out which group has been used as the baseline.
+* It will be the group that comes first alphabetically, so it should be Broadleaf.      
+* The other way to check would be to look and see which group is not mentioned in the above table. Conifer is mentioned (in the SpeciesConifer heading) and so again the baseline group is Broadleaf.    
+
+This means that the intercept value and Depth coefficient correspond to the Broadleaf group and as a result I know what the equation of one of my lines is:
+
+__Broadleaf: Light = 7962 + -262.2 x Depth__
+
+In this example we know that the gradient is the same for both lines (because we explicitly asked R not to include an interaction), so all I need to do is find the intercept value for the Conifer group. Unfortunately, the final value given underneath SpeciesConifer does not give me the intercept for Conifer, instead it tells me the difference between the Conifer group intercept and the baseline intercept i.e. the equation for the line of best fit for conifer woodland is given by:
+
+Conifer: __Light = (7962 + -3113) + -262.2 x Depth__
+         __Light = 4829 + -262.2 x Depth__
+         
+### 3.4.1 Adding multiple regression lines
+
+Unfortunately, R doesn’t have a sensible way of automatically adding multiple regression lines to a plot and so if we want to do this, we will have to do it manually.
+
+First, we create the underlying plot containing the raw data values.
+
+```{r}
+plot(Light~Depth, data=Treelights, type="n")
+points(Light~Depth, data=Brolight, col="blue")
+points(Light~Depth, data=Conlight, col="red")
+```
+* The first line creates an empty plotting window of the correct size to hold the data (the type=’n’ argument stops R from actually drawing the points)     
+* The second and third lines add the points for the Broadleaf and Conifer data respectively.    
+
+We now fit the linear regression without interaction terms (i.e. just an ‘additive’ model), just as we did earlier.
+#### Fit linear regression
+```{r}
+lm.add<-lm(Light~Depth+Species,data=Treelights)
+```
+We first need to extract the relative coefficient values from the lm object and then combine them manually to create separate vectors containing the intercept and slope coefficients for each line. This next set of command is a bit annoying but stick with it; it’ll pay dividends (no, really it will – you always secretly wanted to be a computer programmer didn’t you? this medic/biologist/life scientist thing is just a passing phase that you’ll grow out of…)
+
+```{r}
+cf<-coef(lm.add)
+cf
+cf.Broadleaf<-c(cf[1], cf[2])
+cf.Conifer<-c(cf[1]+cf[3], cf[2])
+cf.Broadleaf
+cf.Conifer
+```
+* The first line extracts the three (in this case) coefficients from the lm object as a vector called cf, and the second line prints this to the screen.     
+* In the third line we take the 1st and 2nd components of cf and store them as the coefficients for the Broadleaf line in a vector called cf.Broadleaf      
+* The fourth line is where we do some actual calculations. Here we realise that the intercept of the conifer line is actually the sum of the 1st and 3rd values of cf, whereas the slope is just the 2nd value, and so we create a vector for the conifer line that reflects this.       
+* The 5th and 6th lines just print these two vectors to the screen.               
+
+We can now use these two vectors to add the appropriate regression lines to the existing plot.
+
+```{r}
+plot(Light~Depth, data=Treelights, type="n")
+points(Light~Depth, data=Brolight, col="blue")
+points(Light~Depth, data=Conlight, col="red")
+abline(cf.Broadleaf, col="blue")
+abline(cf.Conifer, col="red")
+```
+
+### 3.5 Assumptions 
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm(Light~Depth+Species, data=Treelights))
+```
+* The top left graph looks ok, no systematic pattern.      
+* The top right graph isn’t perfect, but I’m happy with the normality assumption.      
+* The bottom left graph is ok, some very slight suggestion of heterogeneity of variance, but nothing to be too worried about.     
+* The bottom right graph shows that all of the points are ok.     
+
+### 3.6 Dealing with Interaction
+
+If there had been a significant interaction between the two predictor variables (for example, if light intensity had dropped off significantly faster in conifer woods than in broadleaf woods, in addition to being lower overall, then we would again be looking for two equations for the linear regression, but this time the gradients vary as well.
+
+In this case interaction is important and so we need the output from a linear regression that explicitly includes the interaction term
+
+```{r}
+lm(Light~Depth+Species+Depth:Species, data=Treelights)
+```
+
+As before the broadleaf line is used as the baseline regression and we can read off the values for its intercept and slope directly:
+
+__Broadleaf: Light = 7798.57 + -211.13 x Depth__
+
+Note that this is different from the previous section, by allowing for an interaction all fitted values will change.
+
+For the conifer line we will have a different intercept value and a different gradient value. As before the value underneath SpeciesConifer gives us the difference between the intercept of the conifer line and the broadleaf line. The new, additional
+term Depth:SpeciesConifer tells us how the coefficient of Depth varies for the conifer line i.e. how the gradient is different. 
+
+Putting these two together gives us the following equation for the line of best fit conifer woodland:
+
+__Conifer: Light = (7798.57 + -2784.58) + (-221.13 + -71.04) x Depth__
+__Light = 5014 + -292.2 x Depth__
+
+These also happen to be exactly the lines of best fit that you would get by calculating a linear regression on each group’s data separately.
+
+### 3.7 Exercise
+
+The CS4-yarrow.csv dataset contains information on field trials at three different farms. Each farm recorded the yield of clover in each of ten fields along with the density of yarrow stalks in each field.
+* Investigate how clover yield is affected by yarrow stalk density. Is there evidence of competition between the two species?    
+* Is there a difference between farms?
+
+
+```{r}
+fields<-read.csv(file="CS4-yarrow.csv", header=T)
+fields
+```
+#### Visualise the data
+```{r}
+plot(Yield~Yarrow, data=fields)
+```
+#### Create subsets
+```{r}
+farmA<-subset(fields, subset=(Farm=="A"))
+farmB<-subset(fields, subset=(Farm=="B"))
+farmC<-subset(fields, subset=(Farm=="C"))
+farmA
+farmB
+farmC
+
+
+```
+#### Visualise subset data
+```{r}
+plot(Yield~Yarrow,data=fields,type="n", main= "Clover yield and Yarrow Density in 3 different farms", xlab="Yarrow Density", ylab="Clover Yield")
+points(Yield~Yarrow,data=farmA,col= "blue")
+points(Yield~Yarrow,data=farmB,col= "orange")
+points(Yield~Yarrow,data=farmC,col= "green")
+```
+
+#### Linearise data
+```{r}
+plot(Yield~Yarrow,data=fields,type="n", main= "Clover yield and Yarrow Density in 3 different farms", xlab="Yarrow Density", ylab="Clover Yield")
+points(Yield~Yarrow,data=farmA,col= "blue")
+points(Yield~Yarrow,data=farmB,col= "orange")
+points(Yield~Yarrow,data=farmC,col= "green")
+
+lm.farmA<-lm(Yield~Yarrow, data=farmA)
+lm.farmB<-lm(Yield~Yarrow, data=farmB)
+lm.farmC<-lm(Yield~Yarrow, data=farmC)
+abline(lm.farmA, col="blue")
+abline(lm.farmB, col="orange")
+abline(lm.farmC, col="green")
+
+
+```
+#### Perform ANOVA
+```{r}
+anova(lm(Yield~Yarrow*Farm, data=fields))
+```
+__Yarrow:Farm has a p-value of 0.5457 therefore the interaction between Yarrow and Farm is not significant. Yarrow yield has a very low p-value of 1.847e-05, it can be concluded that Yarrow Density has a significant affect on clover yield. There is no significant affect of farm on clover yield p-value >0.05.__
+
+#### interpreting R output
+```{r}
+lm(Yield~Yarrow, data=farmA)
+lm(Yield~Yarrow, data=farmB)
+```
+Intercept is 55.22 and the coefficient of the Yarrow variable (the number infront of it in the equation) is -0.094
+__equation: yield = 55.22+ -0.094 x yarrow density__
+_This came from fitting a simple linear model to the FarmA dataset and has the meaning that for every 1 yarrow density we lose 0.0924 clover yield._
+
+#### Interaction is not significant - calculate specific combination
+```{r}
+lm(Yield~Yarrow+Farm, data=fields) # + means not including an interaction term (*) in this fit
+```
+__The intercept value for the FarmA group is FarmA= 57.58 - 0.11 x Yarrow Density__
+
+#### Calculate equations for FarmB and FarmC
+
+__FarmB = (57.58 + 0.32) + -0.11 = 57.26 + -0.11 x Yarrow Density__
+
+__FarmC = (57.58 + -0.54) + -0.11 = 57.04 + - 0.11 x Yarrow Density__
+
+#### Adding multiple regression lines
+```{r}
+plot(Yield~Yarrow, data=fields, type="n")
+points(Yield~Yarrow, data=farmA, col="blue")
+points(Yield~Yarrow,data=farmB,col= "orange")
+points(Yield~Yarrow,data=farmC,col= "green")
+
+lmfarm.add<-lm(Yield~Yarrow+Farm, data=fields)
+```
+```{r}
+cf.farm<-coef(lmfarm.add)
+cf.farm
+cf.farmA<-c(cf.farm[1], cf.farm[2]) # refers to coefficients [1] intercept [2] Yarrow 
+cf.farmB<-c(cf.farm[1]+cf.farm[3], cf.farm[2]) # [1]+[3] FarmB
+cf.farmC<-c(cf.farm[1]+cf.farm[4], cf.farm[2]) #[1]+[4] FarmC
+cf.farmA 
+cf.farmB
+cf.farmc
+```
+
+# Add appropriate regression lines to current plot 
+```{r}
+plot(Yield~Yarrow, data=fields, type="n", xlab="Yarrow Density", ylab="Clover Yield")
+points(Yield~Yarrow, data=farmA, col="blue")
+points(Yield~Yarrow, data=farmB, col="orange")
+points(Yield~Yarrow, data=farmC, col="green")
+
+abline(cf.farmA, col="blue")
+abline(cf.farmB, col="orange")
+abline(cf.farmC, col="green")
+```
+
+#### Check assumptions
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm(Yield~Yarrow+Farm, data=fields))
+```
+TL: looks ok no systematic pattern
+TR: QQ plot normal distribution looks good. 
+BL: Ok, slight suggestion of heterogeneity of variance
+BR: all points are ok
+
+__Yarrow:Farm has a p-value of 0.5457 therefore the interaction between Yarrow and Farm is not significant. Yarrow yield has a very low p-value of 1.847e-05, it can be concluded that Yarrow Density has a significant affect on clover yield. There is no significant affect of farm on clover yield p-value >0.05. Therefore there is no significant difference in clover yield between farms__
+
