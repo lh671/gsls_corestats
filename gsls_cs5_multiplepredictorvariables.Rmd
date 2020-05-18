@@ -1,0 +1,465 @@
+---
+title: "GSLS CS5 - Multiple Predictor Variables"
+author: Liana Hardy
+date: 2020-05-18
+output: html_notebook
+---
+
+#### Aim:
+To introduce R commands for constructing linear models of multiple continuous and categorical variables and performing backwards stepwise elimination
+
+#### Goals
+By the end of this practical participants should be able to achieve the following:     
+1. Construct a linear model of up to three continuous and categorical variables    
+a. Understand how to include and exclude interaction terms     
+b. Understand how to interpret the output    
+2. Perform backwards stepwise elimination to produce a minimal model    
+
+#### Background 
+This practical is divided into two main sections. The first section explores the concept of the linear model framework and revisits the work from previous practicals. The linear model concept is expanded to systems with three predictor variables.
+The second section focuses on a model selection technique called backwards stepwise elimination. This technique allows comparisons to be made between nested models and any uninformative predictor variables can be dropped so that only a minimal model remains.
+Within each section there will be a worked example and an exercise.
+
+*****
+
+## 1 Linear Models
+
+### 1.1 Datasets 
+
+The first section uses the following datasets: CS5-H2S.csv. This is a dataset comprising 16 observations of three variables (one dependent and two predictor). This records the air pollution caused by H2S produced by two types of waste treatment plants. For both types of plant, we obtain eight=== measurements each of H2S production (ppm). We also obtain information on the daily temperature (C). The data are stacked.
+
+### 1.2 Section Commands
+Commands used in this section.
+
+'lm'           *constructs a linear model*
+'subset()'     *extracts a subset from a dataframe*
+
+### 1.3 RStudio Commands
+
+#### Load the CS5-H2S.csv data into RStudio and call it airpoll.
+```{r}
+airpoll<-read.csv(file="CS5-H2S.csv", header=T)
+airpoll
+```
+#### Visualise the data
+```{r}
+plot(H2S~Temp, data=airpoll, type="n")
+plantA<-subset(airpoll, subset=(Plant=="A"))
+plantB<-subset(airpoll, subset=(Plant=="B"))
+points(H2S~Temp, plantA, col="red")
+points(H2S~Temp, plantB, col="blue", pch=2)
+```
+The first line plots all of the H2S values against the temperature values from the airpoll dataset regardless of which plant they are from. However it neglects to actually put the points on the screen (the argument type=n prevents the actual plotting of data). This command is used simply to create a plotting region of the correct size and extent for later.
+
+The second and third lines create subsets of the dataframe airpoll. The second line extracts all observations from the subset of airpoll that has the Plant variable equal to “A” (via the subset=(Plant==”A”) argument).
+
+The fourth and fifth lines add these subsetted points to the graph window using different colours and characters so that the data points for each plant can be distinguished.
+
+__It looks as though the variable Plant has an effect on H2S emissions (as one cloud of points is higher than the other).There is also a suggestion that Temperature might affect emissions (both data sets look like the gradient of the line of best fit through their respective cloud might not be zero) and it also appears that there might be an interaction between Plant and temperature (the gradient of the two lines of best fit don’t look like they’ll be that similar).__
+
+#### Construct and analyse a full linear model
+```{r}
+lm.full<-lm(H2S~Plant+Temp+Plant:Temp,data=airpoll)
+lm.full
+```
+The first line creates a linear model that seeks to explain the H2S values in terms of the categorical Plant variable, the continuous Temp variable and the interaction between the two variables. This linear model object is given the name lm.full
+
+The first argument H2S~Plant+Temp+Plant:Temp is a formula that summarises the model to be fit. Here H2S is the dependent variable and we are asking R to use the Plant, Temp and Plant:Temp interaction terms as predictor variables.
+
+This gives us the coefficients of the model:
+  (Intercept) 6.20495
+  PlantB -2.73075
+  Temp -0.05448
+  PlantB:Temp 0.18141
+  
+These are best interpreted by using the linear model notation: 
+
+__*H2S* = 6.20495 - 0.05448 x *Temp* + (0, -2.73075)(*PlantA-PlantB*)+ (0, 0.18141 x *Temp*)(*PlantA-PlantB*)__
+
+This is effectively shorthand for writing down the equation of the two straight lines (one for each categorical variable):
+
+Plant A: *H2S* = 6.20495 -0.05448 x *Temp*      
+Plant B: *H2S* = 3.4742 + 0.12693 x *Temp*
+
+#### Perform ANOVA and check assumptions
+```{r}
+anova(lm.full)
+par(mfrow=c(2,2))
+plot(lm.full)
+```
+__Here we can see that the interaction term appears to be marginally significant, implying that the effect of temperature on H2S is different for the two different plants.__
+
+TL: no systemic pattern
+TR: normality - looks okay, slight snaking. 
+BL: Some heterogeneity apparent.
+BR All points okay but some very close to line. 
+
+### 1.4 Exploring Models
+Rather than stop here however, we will use the concept of the linear model to its full potential and show that we can construct and analyse any possible combination of predictor variables for this dataset. Namely we will consider the following four extra models:      
+1. H2S~Plant+Temp: (an additive model)      
+2. H2S~Plant: (equivalent to a one-way ANOVA)      
+3. H2S~Temp: (equivalent to a simple linear regression)       
+4. H2S~1: (the null model, where we have no predictors)
+
+### 1.4.1 Additive model
+
+#### Construct and analyse the additive linear model
+```{r}
+lm.add<-lm(H2S~Plant+Temp, data=airpoll)
+lm.add
+anova(lm.add)
+```
+The first line creates a linear model that seeks to explain the H2S values purely in terms of the categorical Plant variable and the continuous Temp variable.
+
+This gives us the coefficients of the additive model:    
+* (Intercept) 3.90164    
+* PlantB 1.8361   
+* Temp 0.03629    
+
+These are best interpreted by using the linear model notation:
+
+__*H2S* = 3.9 +0.036 x *Temp* + (0,1.8)(*PlantA, PlantB*)__
+
+This is effectively shorthand for writing down the equation of the two straight lines (one for each categorical variable):
+Plant A: *H2S*= 3.9 + 0.036 × *Temp*
+Plant B: *H2S*= 5.7 + 0.036 × *Temp*
+
+What is very important to note is not so much that the coefficients have changed (it is natural to assume that there would be some change in the model given that we’ve altered the predictor variables included). __What is striking here is that the signs of the coefficients have changed!__ For example, in the full model we saw that the coefficient of Plant B was negative (implying that in general Plant B produced lower H2S values than Plant A by default) whereas now it is positive indicating exactly the opposite effect. Given that the difference between the two models was the inclusion of an interaction term which we saw was significant in the analysis of the full model, it perhaps, is not surprising that dropping this term would lead to very different results. But just imagine if we had never included it in the first place! If we only looked at the additive model we would come out with completely different conclusions about the baseline pollution levels of each plant.
+
+__ANOVA shows that the temperature term is not signidicant but the plant term is very signficant__
+
+#### Check assumption of additive model
+```{r}
+par(mfrow=c(2,2))
+plot(lm.add)
+```
+Diagnostic plots from additive model are quite different from the full model. Homogeneity and pattern in residuals. 
+### 1.4.2 Revisiting ANOVA
+
+#### Construct and analyse only the plant effect
+```{r}
+boxplot(H2S~Plant, data=airpoll)
+lm.plant<-lm(H2S~Plant, data=airpoll)
+lm.plant
+anova(lm.plant)
+```
+__In this case it tells us the means of the groups. (Intercept) is the mean of the plantA H2S data (4.8225) whilst PlantB tells us that the mean of the plant B H2S data is 1.8250 more than the intercept value i.e. the mean of plant B is 4.8225+1.8250 = 6.6475.__
+
+
+#### Check assumptions of plant only model
+```{r}
+aggregate(H2S~Plant, data=airpoll, summary)
+summary(airpoll)
+boxplot(H2S~Plant, data=airpoll)
+lm.plantonly<-lm(H2S~Plant, data=airpoll)
+par(mfrow=c(2,2))
+plot(lm.plantonly)
+```
+Diagnostic plots are much improved using plant only data. 
+
+### 1.4.3 Revisiting Regression
+
+#### Construct a simple linear regression model
+```{r}
+lm.temp<-lm(H2S~Temp,data=airpoll)
+plot(H2S~Temp, data=airpoll)
+abline(lm.temp)
+lm.temp
+anova(lm.temp)
+```
+* The first line fits a linear model to the data     
+* The second line creates a scatterplot        
+* The third line uses the results of the linear model fitting (lm.Temp) to add a line of best fit to the scatterplot.     
+* The fourth line gives us the coefficients to the equation of the line of best fit      
+* The fifth line gives us the ANOVA analysis
+
+__Temperature clearly does not have a significant effect.__
+
+#### Check assumptions of linear regression model
+```{r}
+par(mfrow=c(2,2))
+plot(lm.temp)
+```
+
+### 1.4.4 The null model
+
+#### Construct and analyse the null model
+```{r}
+lm.null<-lm(H2S~1,data=airpoll)
+boxplot(airpoll$H2S)
+lm.null
+```
+* The first line fits a null model to the data (effectively just finding the mean of all H2S values in the dataset)   
+* The second line creates a boxplot       
+* The third line gives us the mean of the H2S values (i.e. the coefficient of the null model)      
+
+_The null model by itself is rarely analysed for its own sake but is instead used a reference point for more sophisticated model selection techniques._
+
+### 1.5 Example - All continuous variables
+
+Use the internal dataset trees. This is a dataframe with 31 observations of 3 continuous variables. The variables are the height Height, diameter Girth and timber volume Volume of 31 felled black cherry trees.
+
+__Investigate the relationship between Volume (as a dependent variable) and Height and Girth (as predictor variables).__
+```{r}
+trees
+```
+
+*Nb. Here all variables are continuous and so there isn’t a way of producing a 2D plot of all three variables for visualisation purposes using R’s standard plotting functions.*
+
+1. Construct 4 linear models
+2. For each model write down the algebraic equation that the linear model produces that relates volume to the two continuous predictor variables. 
+3. Check assumptions for each test, do any worry you?
+
+#### A. Volume depends on Height, Girth and an interaction between Height:Girth
+```{r}
+#A1.
+lm.interaction<-lm(Volume~Height+Girth+Height:Girth, data=trees)
+lm.interaction
+anova(lm.interaction)
+par(mfrow=c(2,2))
+plot(lm.interaction)
+```
+__A2. Equation__
+
+Volume= 69.4 + (-5.8558 x Girth) + (-1.2971 x height) + (0.1347 x height x Girth)
+
+Volumes = 69.4 - (1.2971 x 67) - (5.8558 x 20) + (0.1347 x 20 x 67) 
+
+Height: Vol= 69.4 - 5.8558 x *Girth*
+Girth: Vol= 68.1 + 0.1347 x *Girth*
+
+__A3. Diagnostic plots do not worry me hugely.__
+
+
+#### B. Volume depends on height and girth
+
+```{r}
+# B1.
+lmvol.add<-lm(Volume~Height+Girth, data=trees)
+lmvol.add
+anova(lmvol.add)
+par(mfrow=c(2,2))
+plot(lmvol.add)
+```
+__B2. Equation__
+
+Coefficients of additive model:
+(intercept) -57.99
+Height 0.3393
+Girth 4.71
+
+Volume = -57.99 + 4.71 x girth + (height x 0.3393)
+
+
+
+__B3.Not happy with diagnostic plots, heterogeneity and some points not okay__
+
+#### Volume depends on Girth
+```{r}
+# C1. 
+lm.girth<-lm(Volume~Girth, data=trees)
+plot(Volume~Girth, data=trees)
+abline(lm.girth)
+lm.girth
+anova(lm.girth)
+par(mfrow=c(2,2))
+plot(lm.girth)
+
+```
+__C2. Equation: y=mx+c, volume= 5.066 x *Girth* + -36.943__
+
+__C3. Again one data point is not okay, pattern in residuals and homogeneity not great.__
+
+#### Volume depends on height 
+```{r}
+# D1.
+lm.height<-lm(Volume~Height, data=trees)
+plot(Volume~Height, data=trees)
+abline(lm.height)
+lm.height
+anova(lm.height)
+par(mfrow=c(2,2))
+plot(lm.height)
+```
+__D2. Equation: y=mx+c, volume= 1.543 x *Height* + -87.124__
+
+__C3. Diagnostic plots improved, all points valid, residuals ok.__
+
+#### Calculate the predicted volume of a tree that has a diameter of 20 inches and a height of 67 feet in each case. 
+
+__Full lm__
+
+A. Volume= 69.4 + (-5.8558 x Girth) + (-1.2971 x height) + (0.1347 x height x Girth)
+
+    69.4 - (1.2971 x 67) - (5.8558 x 20) + (0.1347 x 20 x 67) 
+    
+```{r}
+sum(69.4 - (1.2971*67) - (5.8558*20) + (0.1347*20*67))
+```
+    
+__Additive lm__
+
+B. Volume = -57.99 + (4.71 x Girth) + (0.3393 x height) 
+    
+    -57.99 + (4.71*20) + (0.3393 x 67) 
+    
+```{r}
+sum(-57.99 + (4.71*20) + (0.3393*67))
+```
+    
+
+__Girth only lm__
+
+C. Volume = 5.066 x *Girth* + -36.943
+
+    -36.943 + (5.066 x 20) 
+    
+```{r}
+sum(-36.943 + (5.066*20))
+```
+    
+
+__height only lm__
+
+D. volume= (1.543 x *Height*) + -87.124
+  
+    -87.124 + (1.543 x 67) 
+
+```{r}
+sum(-87.124 + (1.543*67))
+```
+
+*****
+
+## 2 Model Comparison
+
+### 2.1 Background
+In the previous example we used a single dataset and fitted five linear models to it depending on which predictor variables we used. Whilst this was fun (seriously, what else would you be doing right now?) It seems that there should be a “better way”. Well thankfully there is! In fact there a several methods that can be used to compare different models in order to help identify “the best” model. More specifically we can determine whether a full model (which uses all available predictor variables and interactions) is necessary to appropriately describe the dependent variable, or whether we can “throw away” some of the terms (e.g. an interaction term) because they don’t offer any useful predictive power.
+Here we will use the Akaike Information Criterion (AIC) in order to compare different models
+
+### 2.2 Data
+
+This section uses the following dataset:
+CS5-Ladybird.csv: this is a dataset comprising 20 observations of three variables (one dependent and two predictor). This records the clutch size (Eggs) in a species of ladybird alongside two potential predictor variables; the mass of the female (Weight), and the colour of the male (Male) which is a categorical variable.
+
+```{r}
+ladybird<-read.csv(file="CS5-Ladybird.csv", header=T)
+ladybird
+```
+#### Visualise the data
+```{r}
+par(mfrow=c(1,1))
+plot(Eggs~Weight, data=ladybird, type="n")
+Wild<-subset(ladybird, subset=(Male=="Wild"))
+Melanic<-subset(ladybird, subset=(Male=="Melanic"))
+points(Eggs~Weight, data=Wild, col="red")
+points(Eggs~Weight, data=Melanic, col="black")
+```
+
+```{r}
+lmlady.full<-lm(Eggs~Weight+Male+Weight:Male,data=ladybird)
+summary(lmlady.full)
+```
+#### Construct reduced model
+```{r}
+lm.red<-lm(Eggs~Weight+Male,data=ladybird)
+summary(lm.red)
+```
+### AIC
+```{r}
+extractAIC(lmlady.full)
+extractAIC(lm.red)
+```
+For each line the first number tells you how many parameters are in your model and the second number tells you the AIC score for that model. Here we can see that the full model has 4 parameters (the intercept, the coefficient for the continuous variable Weight, the coefficient for the categorical variable Male and a coefficient for the interaction term Weight:Male) and an AIC score of 41.3 (1dp) and the reduced model has a lower AIC score of 40.4 (1dp) with only 3 parameters (since we’ve dropped the interaction term). There are different ways of interpreting AIC scores but the most widely used interpretation says that:
+
+__If the difference between two AIC scores is greater than 2 then the model with the smallest AIC score is “more supported” than the model with the higher AIC score. Whereas if the difference between the two models’ AIC scores is less than 2 then both models are “equally well supported”.__
+
+This choice of language (supported vs significant) is deliberate and there are areas of statistics where AIC scores are used differently from the way we are going to use them here (ask if you want a bit of philosophical ramble from me). However in this situation we will use the AIC scores to decide whether our reduced model is at least as good as the full model. Here since the difference in AIC scores is less than 2, we can say that dropping the interaction term has left us with a model that is both simpler (fewer terms) and as least as good (AIC score) as the full model. As such our reduced model Eggs~Weight+Male is designated our current “working” minimal model.
+
+#### 2.3.1.1 Model Simplification Step 2
+
+Next, we see which of the remaining terms can be dropped. We will look at the models where we have dropped both Male and Weight (i.e. Eggs~Weight and Eggs~Male) and compare their AIC values with the AIC of our current minimal model (Eggs~Weight+Male). If the AIC values of at least one of our new reduced models is lower (or at least no more than 2 greater) than the AIC of our current minimal model, then we can drop the relevant term and get ourselves a new minimal model. If we find ourselves in a situation where we can drop more than one term we will drop the term that gives us the model with the lowest AIC.
+
+#### Drop weight variable
+```{r}
+lm.male<-lm(Eggs~Male, data=ladybird)
+extractAIC(lm.male)
+```
+
+#### Drop Male variable
+```{r}
+lm.weight<-lm(Eggs~Weight, data=ladybird)
+extractAIC(lm.weight)
+```
+Considering both outputs together and comparing with the AIC of our current minimal model (40.4) we can see that dropping Male has decreased the AIC further to 38.8, whereas dropping Weight has actually increased the AIC to 60.0 and thus worsened the model quality.
+
+__Hence we can drop Male and our new minimal model is Eggs~Weight.__
+
+#### 2.3.2.1 Model Simplification 3
+Our final comparison is to drop the variable Weight and compare this simple model with a null model (Eggs~1), which assumes that the brood size is constant across all parameters.
+
+```{r}
+lmlady.null<-lm(Eggs~1, data=ladybird)
+extractAIC(lmlady.null)
+```
+
+The AIC of our null model is quite a bit larger than that of our current minimal model Eggs~Weight and so we conclude that Weight is important. As such our minimal model is Eggs~Weight.
+
+So, in summary, we could conclude that female size is a useful predictor of clutch size, but that male type is not so important.
+
+__At this stage we can analyse the minimal linear (lm.weight) model using the anova() function, and we should consider the diagnostic plots by using the plot(lm.weight) command.__
+
+#### Analyse minimal model
+```{r}
+anova(lm.weight)
+par(mfrow=c(2,2))
+plot(lm.weight)
+```
+### 2.4 Notes on BSE
+
+This method of finding a minimal model by starting with a full model and removing variables is called backward stepwise elimination. Although regularly practiced in data analysis, there is increasing criticism of this approach, with calls for it to be avoided entirely.
+Why have we made you work through this procedure then? Given their prevalence in academic papers, it is very useful to be aware of these procedures and to know that there are issues with them. In other situations, using AIC for model comparisons are justified and you will come across them regularly. Additionally, there may be situations where you feel there are good reasons to drop a parameter from your model – using this technique you can justify that this doesn’t affect the model fit. In summary, using backwards stepwise elimination for model comparison is still a useful technique.
+
+*N.B. Performing backwards stepwise elimination manually can be quite tedious. Thankfully R acknowledges this and there is a single inbuilt function called step that can perform all of the necessary steps for you using AIC.*
+
+```{r}
+lmlady.full<-lm(Eggs~Weight+Male+Weight:Male,data=ladybird)
+step(lmlady.full)
+```
+This will perform a full backwards stepwise elimination process and will find the minimal model for you. 
+
+*****
+
+### 2.5 Exercise
+
+
+Use the internal dataset trees and the airpoll dataset from earlier.
+
+1. Perform a backwards stepwise elimination on both of these datasets and discover the minimal model using AIC.    
+__*NB; if an interaction term is significant then any main factor that is part of the interaction term cannot be dropped from the model.*__     
+
+2. If you’re feeling up for it attempt a backwards stepwise elimination process on the internal CO2 dataset. This dataframe has 1 dependent variable (uptake) and 4 predictor variables (Plant, Type, Treatment, conc).      
+*Unfortunately, the dataset does not contain enough data to construct a full linear model using all 4 predictor variables (with all of the interactions), so ignore the Plant variable and take uptake ~ Type + Treatment + conc + Type:Treatment + Type:conc + Treatment:conc + Type:Treatment:conc as your full model.*
+
+```{r}
+lmtree.full<-lm(Volume~Height+Girth+Height:Girth, data=trees)
+summary(lmtree.full)
+step(lmtree.full)
+```
+__As there is an interaction between height and girth these cannot be dropped. Dropping Height:Girth increases AIC from 65.49 to 86.936__
+
+```{r}
+lmair.full<-lm(H2S~Plant+Temp+Plant:Temp, data=airpoll)
+summary(lmair.full)
+step(lmair.full)
+```
+```{r}
+CO2
+lm.co2.full<-lm(uptake~Type+Treatment+conc+Type:Treatment+Type:conc+Treatment:conc+Type:Treatment:conc, data=CO2)
+summary(lm.co2.full)
+step(lm.co2.full)
+```
+
+
+
+
